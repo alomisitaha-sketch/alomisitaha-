@@ -1,16 +1,16 @@
 import streamlit as st
 import requests
 
-# إعداد الصفحة
+# إعدادات الصفحة
 st.set_page_config(page_title="معرفة ألفاظ القرآن الكريم", layout="centered")
 
 st.title("📖 إضافة الكلمات والإحصاء القرآني")
 st.write("البحث عن كلمتين في القرآن الكريم والتوافق الإحصائي الدقيق.")
 
-# دالة محسنة لجلب البيانات والتخزين المؤقت
+# دالة لجلب البيانات وتخزينها مؤقتاً
 @st.cache_data
 def load_quran():
-    # رابط مباشر لملف JSON القرآني (تأكد من صحة الرابط المباشر Raw)
+    # رابط مباشر لملف JSON القرآني على جيت هاب
     url = "https://raw.githubusercontent.com/alomisitaha-sketch/alomisitaha-/main/quran.json"
     try:
         response = requests.get(url, timeout=20)
@@ -23,11 +23,11 @@ def load_quran():
         st.error(f"حدث خطأ في الاتصال بالشبكة: {e}")
         return None
 
-# تحميل البيانات
+# تحميل بيانات القرآن
 quran_data = load_quran()
 
 if quran_data:
-    # خانات الإدخال
+    # خانات إدخال الكلمات
     col1, col2 = st.columns(2)
     with col1:
         word1 = st.text_input("أدخل الكلمة الأولى:")
@@ -43,7 +43,7 @@ if quran_data:
             matches1 = []
             matches2 = []
 
-            # البحث والتجميع في كامل السور والآيات
+            # البحث والتجميع في جميع السور والآيات
             for surah in quran_data:
                 surah_name = surah.get('name', '')
                 for ayah in surah.get('verses', []):
@@ -60,7 +60,7 @@ if quran_data:
                         count2 += c
                         matches2.append(f"سورة {surah_name} - الآية ({ayah_num}): {text}")
 
-            # عرض النتائج خارج حلقة التكرار
+            # عرض النتائج الإحصائية
             st.markdown("---")
             st.subheader("📊 نتائج المقارنة الإحصائية:")
 
@@ -76,7 +76,7 @@ if quran_data:
                 diff = abs(count1 - count2)
                 st.info(f"الفرق بينهما هو: {diff} مرة")
 
-            # عرض قائمة الآيات للكلمة الأولى
+            # عرض تفاصيل الآيات للكلمة الأولى
             with st.expander(f"الآيات التي وردت فيها كلمة '{word1}' ({len(matches1)} آية)"):
                 if matches1:
                     for m in matches1:
@@ -84,7 +84,7 @@ if quran_data:
                 else:
                     st.write("لم يتم العثور على مطابقات.")
 
-            # عرض قائمة الآيات للكلمة الثانية
+            # عرض تفاصيل الآيات للكلمة الثانية
             with st.expander(f"الآيات التي وردت فيها كلمة '{word2}' ({len(matches2)} آية)"):
                 if matches2:
                     for m in matches2:
@@ -92,4 +92,5 @@ if quran_data:
                 else:
                     st.write("لم يتم العثور على مطابقات.")
 else:
-    st.error("تعذر تحميل بيانات القرآن الكريم، يرجى التأكد من وجود ملف quran.json والصلاحيات.")
+    st.error("تعذر تحميل بيانات القرآن الكريم. تأكد من وجود ملف quran.json في المستودع.")
+ 
