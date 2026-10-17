@@ -1,90 +1,95 @@
 import streamlit as st
 import requests
 
-# إعدادات الصفحة
-st.set_page_config(page_title="إحصاء ومقارنة ألفاظ القرآن الكريم", layout="centered")
+# إعداد الصفحة
+st.set_page_config(page_title="معرفة ألفاظ القرآن الكريم", layout="centered")
 
-st.title("📖 تضافر الكلمات والإحصاء القرآني")
-st.write("هذا التطبيق يتيح لك مقارنة عدد مرات تكرار أي كلمتين في القرآن الكريم واكتشاف التوافق الإحصائي بدقة.")
+st.title("📖 إضافة الكلمات والإحصاء القرآني")
+st.write("البحث عن كلمتين في القرآن الكريم والتوافق الإحصائي الدقيق.")
 
-# دالة محسنة لجلب البيانات من رابط استضافة مستقر
+# دالة محسنة لجلب البيانات والتخزين المؤقت
 @st.cache_data
 def load_quran():
-    # استخدام رابط مستودع مباشر ومفتوح للقرآن الكريم بصيغة JSON
-    url = "https://raw.githubusercontent.com/risan/quran-json/main/dist/quran.json"
+    # رابط مباشر لملف JSON القرآني (تأكد من صحة الرابط المباشر Raw)
+    url = "https://raw.githubusercontent.com/alomisitaha-sketch/alomisitaha-/main/quran.json"
     try:
         response = requests.get(url, timeout=20)
         if response.status_code == 200:
             return response.json()
-    except Exception as e:
+        else:
+            st.error(f"خطأ في الخادم (HTTP Error): {response.status_code}")
+            return None
+    except requests.exceptions.RequestException as e:
+        st.error(f"حدث خطأ في الاتصال بالشبكة: {e}")
         return None
-    return None
 
-with st.spinner("جاري تحميل بيانات القرآن الكريم وتجهيز محرك البحث..."):
-    quran_data = load_quran()
+# تحميل البيانات
+quran_data = load_quran()
 
 if quran_data:
-    # خانات الإدخال للمستخدم
+    # خانات الإدخال
     col1, col2 = st.columns(2)
     with col1:
-        word1 = st.text_input("أدخل الكلمة الأولى:", "الملائكة")
+        word1 = st.text_input("أدخل الكلمة الأولى:")
     with col2:
-        word2 = st.text_input("أدخل الكلمة الثانية:", "الشياطين")
+        word2 = st.text_input("أدخل الكلمة الثانية:")
 
-    # زر المقارنة
     if st.button("إجراء الإحصاء والمقارنة 🔍"):
         if not word1 or not word2:
-            st.warning("الرجاء إدخال الكلمتين معاً لإتمام المقارنة.")
+            st.warning("الرجاء إدخال الكلمتين معاً لإجراء المقارنة.")
         else:
             count1 = 0
             count2 = 0
             matches1 = []
             matches2 = []
 
-            # هيكلية البيانات في هذا الرابط تعتمد على السور والآيات (verses)
+            # البحث والتجميع في كامل السور والآيات
             for surah in quran_data:
                 surah_name = surah.get('name', '')
                 for ayah in surah.get('verses', []):
                     text = ayah.get('text', '')
                     ayah_num = ayah.get('id', '')
-                    
+
                     if word1 in text:
                         c = text.count(word1)
                         count1 += c
-                        matches1.append(f"سورة {surah_name} - الآية {ayah_num}")
-                        
+                        matches1.append(f"سورة {surah_name} - الآية ({ayah_num}): {text}")
+
                     if word2 in text:
                         c = text.count(word2)
                         count2 += c
-                        matches2.append(f"سورة {surah_name} - الآية {ayah_num}")
+                        matches2.append(f"سورة {surah_name} - الآية ({ayah_num}): {text}")
 
+            # عرض النتائج خارج حلقة التكرار
             st.markdown("---")
             st.subheader("📊 نتائج المقارنة الإحصائية:")
-            
+
             col_res1, col_res2 = st.columns(2)
             with col_res1:
-                st.metric(label=f"تكرار لفظ: ({word1})", value=f"{count1} مرة")
+                st.metric(label=f"تكرار لفظ '{word1}'", value=count1)
             with col_res2:
-                st.metric(label=f"تكرار لفظ: ({word2})", value=f"{count2} مرة")
+                st.metric(label=f"تكرار لفظ '{word2}'", value=count2)
 
             if count1 == count2:
-                st.success(f"✨ توافق إحصائي تام! الكلمتان متساويتان تماماً ({count1} = {count2}).")
+                st.success("✨ الكلمتان متساويتان تماماً في عدد التكرارات!")
             else:
                 diff = abs(count1 - count2)
-                st.info(f"الفرق بينهما هو: {diff} مرة.")
+                st.info(f"الفرق بينهما هو: {diff} مرة")
 
-            with st.expander(f"عرض الآيات التي وردت فيها كلمة ({word1})"):
+            # عرض قائمة الآيات للكلمة الأولى
+            with st.expander(f"الآيات التي وردت فيها كلمة '{word1}' ({len(matches1)} آية)"):
                 if matches1:
                     for m in matches1:
                         st.write(m)
                 else:
-                    st.write("لم تُعثر مطابقات دقيقة (تأكد من كتابة الكلمة بدون تشكيل معقد).")
+                    st.write("لم يتم العثور على مطابقات.")
 
-            with st.expander(f"عرض الآيات التي وردت فيها كلمة ({word2})"):
+            # عرض قائمة الآيات للكلمة الثانية
+            with st.expander(f"الآيات التي وردت فيها كلمة '{word2}' ({len(matches2)} آية)"):
                 if matches2:
                     for m in matches2:
                         st.write(m)
                 else:
-                    st.write("لم تُعثر مطابقات دقيقة.")
+                    st.write("لم يتم العثور على مطابقات.")
 else:
-    st.error("لم نتمكن من الاتصال بقاعدة البيانات. يرجى التأكد من اتصال الإنترنت أو إعادة تحميل الصفحة (Refresh).")
+    st.error("تعذر تحميل بيانات القرآن الكريم، يرجى التأكد من وجود ملف quran.json والصلاحيات.")
