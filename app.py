@@ -7,26 +7,26 @@ st.set_page_config(page_title="معرفة ألفاظ القرآن الكريم",
 st.title("📖 إضافة الكلمات والإحصاء القرآني")
 st.write("البحث عن كلمتين في القرآن الكريم والتوافق الإحصائي الدقيق.")
 
-# دالة لجلب البيانات وتخزينها مؤقتاً
+# دالة لجلب نص القرآن الكريم عبر API مفتوح وتخزين البيانات مؤقتاً
 @st.cache_data
 def load_quran():
-    # رابط مباشر لملف JSON القرآني على جيت هاب
-    url = "https://raw.githubusercontent.com/alomisitaha-sketch/alomisitaha-/main/quran.json"
+    url = "https://api.alquran.cloud/v1/quran/quran-simple"
     try:
         response = requests.get(url, timeout=20)
         if response.status_code == 200:
-            return response.json()
+            data = response.json()
+            return data.get("data", {}).get("surahs", [])
         else:
-            st.error(f"خطأ في الخادم (HTTP Error): {response.status_code}")
+            st.error(f"خطأ في خادم البيانات (HTTP Error {response.status_code})")
             return None
     except requests.exceptions.RequestException as e:
         st.error(f"حدث خطأ في الاتصال بالشبكة: {e}")
         return None
 
 # تحميل بيانات القرآن
-quran_data = load_quran()
+quran_surahs = load_quran()
 
-if quran_data:
+if quran_surahs:
     # خانات إدخال الكلمات
     col1, col2 = st.columns(2)
     with col1:
@@ -44,11 +44,11 @@ if quran_data:
             matches2 = []
 
             # البحث والتجميع في جميع السور والآيات
-            for surah in quran_data:
+            for surah in quran_surahs:
                 surah_name = surah.get('name', '')
-                for ayah in surah.get('verses', []):
+                for ayah in surah.get('ayahs', []):
                     text = ayah.get('text', '')
-                    ayah_num = ayah.get('id', '')
+                    ayah_num = ayah.get('numberInSurah', '')
 
                     if word1 in text:
                         c = text.count(word1)
@@ -92,5 +92,4 @@ if quran_data:
                 else:
                     st.write("لم يتم العثور على مطابقات.")
 else:
-    st.error("تعذر تحميل بيانات القرآن الكريم. تأكد من وجود ملف quran.json في المستودع.")
- 
+    st.error("تعذر جلب بيانات القرآن الكريم عبر الشبكة، يرجى إعادة المحاولة.")
